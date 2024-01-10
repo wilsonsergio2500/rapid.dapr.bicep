@@ -1,0 +1,24 @@
+# yaml-language-server: $schema=https://azuresdkreleasepreview.blob.core.windows.net/azd/schema/azure.yaml.json
+
+name: pubsub-dapr-csharp-servicebus
+metadata:
+  template: pubsub-dapr-csharp-servicebus@0.0.1-beta
+services:
+  sub:
+    project: Rapid.Dapr.Sub
+    language: csharp
+    host: containerapp
+    module: app/publisher
+    docker:
+      path: ./Dockerfile
+      context: ../
+  push:
+    project: Rapid.Dapr.Push
+    language: csharp
+    host: containerapp
+    module: app/subscriber
+    docker:
+      path: ./Dockerfile
+      context: ../
+pipeline: 
+  provider: azdo

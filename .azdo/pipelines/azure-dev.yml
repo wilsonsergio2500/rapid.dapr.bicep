@@ -1,0 +1,54 @@
+trigger: none
+
+variables:
+  buildConfiguration: 'Release'
+  vmImageName: 'ubuntu-latest'
+  projectName: 'RapidDapr.PubSub.sln'
+
+
+pool:
+  vmImage: $(vmImageName)
+
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Install .NET 6 sdk'
+  inputs:
+    version: 6.x
+    packageType: sdk
+- task: DotNetCoreCLI@2
+  inputs:
+    command: build
+    projects: '$(projectName)'
+    publishWebProjects: false
+    modifyOutputPath: true
+    zipAfterPublish: true
+
+- task: setup-azd@0
+  displayName: Install azd
+- pwsh: |
+      $info = $Env:AZURE_CREDENTIALS | ConvertFrom-Json -AsHashtable;
+      
+      azd auth login `
+        --client-id "$($info.clientId)" `
+        --client-secret "$($info.clientSecret)" `
+        --tenant-id "$($info.tenantId)"
+  displayName: azd login
+  env:
+    AZURE_CREDENTIALS: $(AZURE_CREDENTIALS)
+
+- pwsh: |
+    azd provision --no-prompt
+  displayName: Provision Infrastructure
+  env:
+    AZURE_SUBSCRIPTION_ID: $(AZURE_SUBSCRIPTION_ID)
+    AZURE_ENV_NAME: $(AZURE_ENV_NAME)
+    AZURE_LOCATION: $(AZURE_LOCATION)
+
+- pwsh: |
+    azd deploy --no-prompt
+  displayName: Deploy Application
+  env:
+    AZURE_SUBSCRIPTION_ID: $(AZURE_SUBSCRIPTION_ID)
+    AZURE_ENV_NAME: $(AZURE_ENV_NAME)
+    AZURE_LOCATION: $(AZURE_LOCATION)

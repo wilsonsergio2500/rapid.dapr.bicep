@@ -1,0 +1,43 @@
+version: '3.4'
+
+services:
+  rapid.dapr.push:
+    image: ${DOCKER_REGISTRY-}publisherapp
+    build:
+      context: .
+      dockerfile: Rapid.Dapr.Push/Dockerfile
+    ports:
+      - "3500:3500" # HOST_PORT:CONTAINER_PORT
+
+  publisherapp-dapr:
+    image: "daprio/daprd:edge"
+    command: ["./daprd", "-app-id", "pushapp", "-app-port", "80", "-components-path", "/components", "-log-level", "debug"]
+    volumes:
+      - "./components/:/components"
+    
+    depends_on:
+      - rapid.dapr.push
+    network_mode: "service:rapid.dapr.push" 
+
+  rapid.dapr.sub:
+    image: ${DOCKER_REGISTRY-}subscriberapp
+    build:
+      context: .
+      dockerfile: Rapid.Dapr.Sub/Dockerfile
+    ports:
+      - "3501:3501"
+      
+  subscriberapp-dapr:
+    image: "daprio/daprd:edge"
+    command: ["./daprd", "-app-id", "subapp", "-app-port", "80", "-components-path", "/components", "-log-level", "debug"]
+    volumes:
+      - "./components/:/components"
+    depends_on:
+      - rapid.dapr.sub
+    network_mode: "service:rapid.dapr.sub"
+    
+  redis:
+    image: "redis:alpine"
+    hostname: redisstate
+    ports:
+      - "6379:6379"
